@@ -2,12 +2,19 @@ pipeline {
     agent {
         docker {
             image 'python:3.10'
+            args '-u root:root' // gives root permissions to install packages
         }
     }
     stages {
+        stage('Install Git') {
+            steps {
+                sh 'apt-get update && apt-get install -y git'
+                sh 'git --version'
+            }
+        }
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/momagdyy97/course-jenkins-project.git', branch: 'main'
+                checkout scm
                 sh 'ls -ltr'
             }
         }
