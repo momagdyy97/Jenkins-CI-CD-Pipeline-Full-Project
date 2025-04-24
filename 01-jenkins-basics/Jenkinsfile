@@ -1,7 +1,7 @@
 pipeline {
     agent any
     stages {
-        stage('Setup') {
+        stage('Checkout') {
             steps {
                 //withCredentials([usernamePassword(credentialsId: 'server-creds', usernameVariable: "myuser", passwordVariable: "mypassword")]) {
 
