@@ -9,6 +9,7 @@ pipeline {
         DB_HOST = '192.168.12.1'
         USERNAME = 'user1'
         PASSWORD = 'password123'
+        Test = 'Sent Successfully'
     }
     stages {
         stage('Install Git') {
@@ -37,7 +38,7 @@ pipeline {
             steps {
                 dir('01-jenkins-basics') {
                     sh 'pytest'
-                    echo "The Password is ${PASSWORD}"
+                    echo "Test is ${Test}"
                 }
             }
         }
