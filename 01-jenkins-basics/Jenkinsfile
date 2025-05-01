@@ -1,80 +1,60 @@
 pipeline {
-    agent any
-
+    agent {
+        docker {
+            image 'python:3.10'
+            args '-u root:root'
+        }
+    }
     environment {
         DB_HOST = '192.168.12.1'
         Test = 'Sent Successfully'
     }
-
     stages {
-        stage('Install Git') {
-            agent {
-                docker {
-                    image 'python:3.10'
-                    args '-u root:root'
-                }
-            }
+        stage('Install Git & Setup') {
             steps {
                 sh 'apt-get update && apt-get install -y git'
                 sh 'git --version'
                 echo "The Database IP is ${DB_HOST}"
-            }
-        }
 
-        stage('Checkout') {
-            steps {
-                checkout scm
-                sh 'ls -ltr'
-            }
-        }
-
-        stage('Setup') {
-            agent {
-                docker {
-                    image 'python:3.10'
-                    args '-u root:root'
-                }
-            }
-            steps {
                 dir('01-jenkins-basics') {
-                    sh 'pip install -r requirements.txt'
+                    sh '''
+                        python -m venv venv
+                        . venv/bin/activate
+                        pip install --upgrade pip
+                        pip install -r requirements.txt
+                    '''
                 }
             }
         }
-
         stage('Test') {
-            agent {
-                docker {
-                    image 'python:3.10'
-                    args '-u root:root'
-                }
-            }
             steps {
                 dir('01-jenkins-basics') {
-                    sh 'pytest'
+                    sh '''
+                        . venv/bin/activate
+                        pytest
+                    '''
                     echo "Test is ${Test}"
                 }
             }
         }
-
         stage('Approval') {
+            agent any
             steps {
                 script {
                     input message: "Do you want to proceed further?", ok: "Yes"
                 }
             }
         }
-
         stage('Deployment') {
+            agent any
             steps {
                 dir('01-jenkins-basics') {
                     echo "Running Deployment"
-                    // Add actual deployment commands here
+                    // Add deployment logic here (e.g., Docker Compose, SCP, etc.)
                 }
             }
         }
     }
-
     post {
         always {
             echo 'Cleaning up resources...'
