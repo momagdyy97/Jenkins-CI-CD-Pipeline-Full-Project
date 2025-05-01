@@ -2,13 +2,11 @@ pipeline {
     agent {
         docker {
             image 'python:3.10'
-            args '-u root:root' // gives root permissions to install packages
+            args '-u root:root'
         }
     }
-    environment{
+    environment {
         DB_HOST = '192.168.12.1'
-        USERNAME = 'user1'
-        PASSWORD = 'password123'
         Test = 'Sent Successfully'
     }
     stages {
@@ -23,14 +21,12 @@ pipeline {
             steps {
                 checkout scm
                 sh 'ls -ltr'
-                echo "The Username is ${USERNAME}"
             }
         }
         stage('Setup') {
             steps {
                 dir('01-jenkins-basics') {
                     sh 'pip install -r requirements.txt'
-                    echo "The Username is ${USERNAME}"
                 }
             }
         }
@@ -52,6 +48,17 @@ pipeline {
                     echo "Running Deployment"
                 }
             }
+        }
+    }
+    post {
+        always {
+            echo 'Cleaning up resources...'
+        }
+        success {
+            echo 'Pipeline completed successfully.'
+        }
+        failure {
+            echo 'Pipeline failed!'
         }
     }
 }
