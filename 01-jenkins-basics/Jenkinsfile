@@ -5,10 +5,12 @@ pipeline {
             args '-u root:root'
         }
     }
+
     environment {
         DB_HOST = '192.168.12.1'
         Test = 'Sent Successfully'
     }
+
     stages {
         stage('Install Git') {
             steps {
@@ -17,12 +19,14 @@ pipeline {
                 echo "The Database IP is ${DB_HOST}"
             }
         }
+
         stage('Checkout') {
             steps {
                 checkout scm
                 sh 'ls -ltr'
             }
         }
+
         stage('Setup') {
             steps {
                 dir('01-jenkins-basics') {
@@ -30,6 +34,7 @@ pipeline {
                 }
             }
         }
+
         stage('Test') {
             steps {
                 dir('01-jenkins-basics') {
@@ -38,17 +43,25 @@ pipeline {
                 }
             }
         }
-        stage('Deployment') {
+
+        stage('Approval') {
+            agent any
             steps {
                 script {
                     input message: "Do you want to proceed further?", ok: "Yes"
                 }
+            }
+        }
+
+        stage('Deployment') {
+            steps {
                 dir('01-jenkins-basics') {
                     echo "Running Deployment"
+                    // Add actual deployment commands here
                 }
             }
         }
-    } // <- close stages here
+    }
 
     post {
         always {
