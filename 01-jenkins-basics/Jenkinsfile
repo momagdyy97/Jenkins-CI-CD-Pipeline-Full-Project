@@ -39,17 +39,15 @@ pipeline {
             }
         }
         stage('Deployment') {
-            input {
-                message "Do you want to proceed further?"
-                ok "Yes"
-            }
             steps {
+                script {
+                    input message: "Do you want to proceed further?", ok: "Yes"
+                }
                 dir('01-jenkins-basics') {
                     echo "Running Deployment"
                 }
             }
-        }
-    }
+       }
     post {
         always {
             echo 'Cleaning up resources...'
