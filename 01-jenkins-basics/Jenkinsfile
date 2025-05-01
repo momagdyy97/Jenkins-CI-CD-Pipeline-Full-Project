@@ -47,7 +47,9 @@ pipeline {
                     echo "Running Deployment"
                 }
             }
-       }
+        }
+    } // <- close stages here
+
     post {
         always {
             echo 'Cleaning up resources...'
@@ -59,5 +61,4 @@ pipeline {
             echo 'Pipeline failed!'
         }
     }
-}
 }
