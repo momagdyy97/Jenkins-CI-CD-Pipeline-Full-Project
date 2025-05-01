@@ -45,21 +45,10 @@ pipeline {
                 }
             }
         }
-
-        // This now runs OUTSIDE Docker entirely
-        stage('Approval') {
-            steps {
-                script {
-                    input message: "Do you want to proceed further?", ok: "Yes"
-                }
-            }
-        }
-
         stage('Deployment') {
             steps {
                 dir('01-jenkins-basics') {
                     echo "Running Deployment"
-                    // e.g., scp files or restart container
                 }
             }
         }
