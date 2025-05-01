@@ -1,60 +1,70 @@
 pipeline {
-    agent {
-        docker {
-            image 'python:3.10'
-            args '-u root:root'
-        }
-    }
+    agent any
+
     environment {
         DB_HOST = '192.168.12.1'
         Test = 'Sent Successfully'
     }
-    stages {
-        stage('Install Git & Setup') {
-            steps {
-                sh 'apt-get update && apt-get install -y git'
-                sh 'git --version'
-                echo "The Database IP is ${DB_HOST}"
 
-                dir('01-jenkins-basics') {
-                    sh '''
-                        python -m venv venv
-                        . venv/bin/activate
-                        pip install --upgrade pip
-                        pip install -r requirements.txt
-                    '''
+    stages {
+        stage('Docker Setup and Test') {
+            agent {
+                docker {
+                    image 'python:3.10'
+                    args '-u root:root'
+                }
+            }
+            stages {
+                stage('Install Git & Setup') {
+                    steps {
+                        sh 'apt-get update && apt-get install -y git'
+                        sh 'git --version'
+                        echo "The Database IP is ${DB_HOST}"
+
+                        dir('01-jenkins-basics') {
+                            sh '''
+                                python -m venv venv
+                                . venv/bin/activate
+                                pip install --upgrade pip
+                                pip install -r requirements.txt
+                            '''
+                        }
+                    }
+                }
+
+                stage('Test') {
+                    steps {
+                        dir('01-jenkins-basics') {
+                            sh '''
+                                . venv/bin/activate
+                                pytest
+                            '''
+                            echo "Test is ${Test}"
+                        }
+                    }
                 }
             }
         }
-        stage('Test') {
-            steps {
-                dir('01-jenkins-basics') {
-                    sh '''
-                        . venv/bin/activate
-                        pytest
-                    '''
-                    echo "Test is ${Test}"
-                }
-            }
-        }
+
+        // This now runs OUTSIDE Docker entirely
         stage('Approval') {
-            agent any
             steps {
                 script {
                     input message: "Do you want to proceed further?", ok: "Yes"
                 }
             }
         }
+
         stage('Deployment') {
-            agent any
             steps {
                 dir('01-jenkins-basics') {
                     echo "Running Deployment"
-                    // Add deployment logic here (e.g., Docker Compose, SCP, etc.)
+                    // e.g., scp files or restart container
                 }
             }
         }
     }
+
     post {
         always {
             echo 'Cleaning up resources...'
