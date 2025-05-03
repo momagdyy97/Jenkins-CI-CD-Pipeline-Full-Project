@@ -8,8 +8,15 @@ pipeline {
     stages {
         stage('Package Locally') {
             steps {
-                sh "zip -r myapp.zip ./* -x '*.git*'"
-                sh "ls -lart"
+                sh '''
+                    if ! command -v zip &> /dev/null; then
+                      echo "❌ zip is not installed. Install it with: sudo apt install -y zip"
+                      exit 1
+                    fi
+
+                    zip -r myapp.zip ./* -x '*.git*'
+                    ls -lart
+                '''
             }
         }
 
