@@ -48,11 +48,10 @@ pipeline {
                             echo "📁 Replacing old app with new deployment..."
                             sudo rm -rf /var/www/html/course-jenkins-project/*
                             sudo cp -r /home/ubuntu/tmp_deploy/* /var/www/html/course-jenkins-project/
-                            sudo chown -R www-data:www-data /var/www/html/course-jenkins-project/
+                            sudo chown -R ubuntu:ubuntu /var/www/html/course-jenkins-project
 
                             echo "🐍 Setting up virtualenv..."
                             cd /var/www/html/course-jenkins-project/02-single-server-deployment
-                            echo "🧹 Cleaning up old virtualenv if exists..."
                             rm -rf venv
                             python3 -m venv venv
                             source venv/bin/activate
