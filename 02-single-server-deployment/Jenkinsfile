@@ -7,7 +7,7 @@ pipeline {
     stages {
         stage('Setup') {
             steps {
-                sh "pip install -r requirements.txt"
+                sh "pip3 install -r requirements.txt"
             }
         }
         stage('Test') {
@@ -32,7 +32,7 @@ pipeline {
                         unzip -o /var/www/html/course-jenkins-project/02-single-server-deployment/myapp.zip -d /var/www/html/course-jenkins-project/02-single-server-deployment/
                         source app/venv/bin/activate
                         cd /var/www/html/course-jenkins-project/02-single-server-deployment/
-                        pip install -r requirements.txt
+                        pip3 install -r requirements.txt
                         sudo systemctl restart nginx
  EOF
                     '''
