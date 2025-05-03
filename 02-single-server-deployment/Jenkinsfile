@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        SERVER_IP = credentials('prod-server-ip') // Jenkins secret text with the IP
+        SERVER_IP = credentials('prod-server-ip')
     }
 
     stages {
@@ -71,11 +71,11 @@ echo "♻️ Restarting app with PM2..."
 cd /var/www/html/course-jenkins-project/02-single-server-deployment
 source venv/bin/activate
 
-# Prevent PM2 uv_cwd error by ensuring PM2 home is valid
+# Prevent PM2 uv_cwd issue
 export PM2_HOME=/home/ubuntu/.pm2
 mkdir -p \$PM2_HOME
 
-# Restart app cleanly
+# Clean start with forced reload
 pm2 delete flask-app || true
 pm2 start venv/bin/python3 --name flask-app -- app.py -f
 pm2 save
