@@ -1,11 +1,8 @@
 from flask import Flask, render_template, request
-
 app = Flask(__name__)
-
 # A dictionary to store tasks with an ID
 tasks = {}
 task_id_counter = 1
-
 @app.route('/', methods=['GET', 'POST'])
 def index():
     global task_id_counter
@@ -21,10 +18,6 @@ def index():
         elif 'delete_task' in request.form:
             task_id_to_delete = int(request.form.get('task_id_to_delete'))
             tasks.pop(task_id_to_delete, None)
-
-        
     return render_template('index.html', tasks=tasks)
-
 if __name__ == '__main__':
-    # app.run(port=5000,debug=True)
     app.run(host='0.0.0.0',port=5000,debug=True)

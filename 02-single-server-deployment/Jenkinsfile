@@ -27,21 +27,17 @@ pipeline {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: 'ssh-key', keyFileVariable: 'MY_SSH_KEY', usernameVariable: 'username')]) {
                     sh '''
-                    scp -i $MY_SSH_KEY -o StrictHostKeyChecking=no myapp.zip  ${username}@${SERVER_IP}:/home/ec2-user/
+                    scp -i $MY_SSH_KEY -o StrictHostKeyChecking=no myapp.zip  ${username}@${SERVER_IP}:/home/ubuntu/
                     ssh -i $MY_SSH_KEY -o StrictHostKeyChecking=no ${username}@${SERVER_IP} << EOF
-                        unzip -o /home/ec2-user/myapp.zip -d /home/ec2-user/app/
+                        unzip -o /var/www/html/course-jenkins-project/02-single-server-deployment/app/myapp.zip -d /var/www/html/course-jenkins-project/02-single-server-deployment
                         source app/venv/bin/activate
-                        cd /home/ec2-user/app/
+                        cd /var/www/html/course-jenkins-project/02-single-server-deployment
                         pip install -r requirements.txt
-                        sudo systemctl restart flaskapp.service
-EOF
+                        sudo systemctl restart nginx
+ EOF
                     '''
                 }
             }
         }
-       
-        
-       
-        
     }
 }
