@@ -70,8 +70,14 @@ sudo chown -R www-data:www-data /var/www/html/course-jenkins-project
 echo "♻️ Restarting app with PM2..."
 cd /var/www/html/course-jenkins-project/02-single-server-deployment
 source venv/bin/activate
-pm2 delete all || true
-sudo pm2 start venv/bin/python3 --name flask-app -- app.py
+
+# Prevent PM2 uv_cwd error by ensuring PM2 home is valid
+export PM2_HOME=/home/ubuntu/.pm2
+mkdir -p \$PM2_HOME
+
+# Restart app cleanly
+pm2 delete flask-app || true
+pm2 start venv/bin/python3 --name flask-app -- app.py -f
 pm2 save
 EOF
                     """
