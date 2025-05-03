@@ -66,6 +66,13 @@ sudo systemctl restart nginx
 
 echo "🔐 Restoring ownership for web server..."
 sudo chown -R www-data:www-data /var/www/html/course-jenkins-project
+
+echo "♻️ Restarting app with PM2..."
+cd /var/www/html/course-jenkins-project/02-single-server-deployment
+source venv/bin/activate
+pm2 delete all || true
+sudo pm2 start venv/bin/python3 --name flask-app -- app.py
+pm2 save
 EOF
                     """
                 }
