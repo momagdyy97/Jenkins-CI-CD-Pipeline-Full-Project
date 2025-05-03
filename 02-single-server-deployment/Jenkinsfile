@@ -2,39 +2,40 @@ pipeline {
     agent any
 
     environment {
-        SERVER_IP = credentials('prod-server-ip')
+        SERVER_IP = credentials('prod-server-ip')  // Injected from Jenkins credentials (as a secret text or username-password)
     }
-    stages {
-        stage('Setup') {
-            steps {
-                sh "pip3 install -r requirements.txt"
-            }
-        }
-        stage('Test') {
-            steps {
-                sh "pytest"
-            }
-        }
 
-        stage('Package code') {
+    stages {
+        stage('Package Locally') {
             steps {
                 sh "zip -r myapp.zip ./* -x '*.git*'"
                 sh "ls -lart"
             }
         }
 
-        stage('Deploy to Prod') {
+        stage('Deploy and Run on Prod') {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: 'ssh-key', keyFileVariable: 'MY_SSH_KEY', usernameVariable: 'username')]) {
                     sh '''
-                    scp -i $MY_SSH_KEY -o StrictHostKeyChecking=no myapp.zip  ${username}@${SERVER_IP}:/home/ubuntu/
+                    echo "📦 Uploading package to PROD server..."
+                    scp -i $MY_SSH_KEY -o StrictHostKeyChecking=no myapp.zip ${username}@${SERVER_IP}:/home/ubuntu/
+
+                    echo "🚀 Connecting to PROD server and deploying..."
                     ssh -i $MY_SSH_KEY -o StrictHostKeyChecking=no ${username}@${SERVER_IP} << EOF
-                        unzip -o /var/www/html/course-jenkins-project/02-single-server-deployment/myapp.zip -d /var/www/html/course-jenkins-project/02-single-server-deployment/
-                        source app/venv/bin/activate
+                        echo "🔍 Unzipping package..."
+                        unzip -o /home/ubuntu/myapp.zip -d /var/www/html/course-jenkins-project/02-single-server-deployment/
+
+                        echo "🐍 Activating virtualenv and installing requirements..."
                         cd /var/www/html/course-jenkins-project/02-single-server-deployment/
+                        source venv/bin/activate
                         pip3 install -r requirements.txt
+
+                        echo "🧪 Running tests..."
+                        pytest
+
+                        echo "🔁 Restarting NGINX..."
                         sudo systemctl restart nginx
- EOF
+                    EOF
                     '''
                 }
             }
