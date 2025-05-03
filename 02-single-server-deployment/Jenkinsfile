@@ -38,35 +38,35 @@ pipeline {
 
                         echo "🚀 Connecting to PROD server and deploying..."
                         ssh -i \$MY_SSH_KEY -o StrictHostKeyChecking=no \$username@\$SERVER_IP << 'EOF'
-                            set -e
+set -e
 
-                            echo "🔍 Unzipping into a temporary directory..."
-                            rm -rf /home/ubuntu/tmp_deploy
-                            mkdir -p /home/ubuntu/tmp_deploy
-                            unzip -o /home/ubuntu/myapp.zip -d /home/ubuntu/tmp_deploy
+echo "🔍 Unzipping into a temporary directory..."
+rm -rf /home/ubuntu/tmp_deploy
+mkdir -p /home/ubuntu/tmp_deploy
+unzip -o /home/ubuntu/myapp.zip -d /home/ubuntu/tmp_deploy
 
-                            echo "📁 Replacing old app with new deployment..."
-                            sudo rm -rf /var/www/html/course-jenkins-project/*
-                            sudo cp -r /home/ubuntu/tmp_deploy/* /var/www/html/course-jenkins-project/
-                            sudo chown -R ubuntu:ubuntu /var/www/html/course-jenkins-project
+echo "📁 Replacing old app with new deployment..."
+sudo rm -rf /var/www/html/course-jenkins-project/*
+sudo cp -r /home/ubuntu/tmp_deploy/* /var/www/html/course-jenkins-project/
+sudo chown -R ubuntu:ubuntu /var/www/html/course-jenkins-project
 
-                            echo "🐍 Setting up virtualenv..."
-                            cd /var/www/html/course-jenkins-project/02-single-server-deployment
-                            rm -rf venv
-                            python3 -m venv venv
-                            source venv/bin/activate
-                            pip install --upgrade pip
-                            pip install -r requirements.txt
+echo "🐍 Setting up virtualenv..."
+cd /var/www/html/course-jenkins-project/02-single-server-deployment
+rm -rf venv
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
 
-                            echo "🧪 Running tests..."
-                            venv/bin/pytest || echo "⚠️ Tests failed, but continuing..."
+echo "🧪 Running tests..."
+venv/bin/pytest || echo "⚠️ Tests failed, but continuing..."
 
-                            echo "🔁 Restarting nginx..."
-                            sudo systemctl restart nginx
+echo "🔁 Restarting nginx..."
+sudo systemctl restart nginx
 
-                            echo "🔐 Restoring ownership for web server..."
-                            sudo chown -R www-data:www-data /var/www/html/course-jenkins-project
-                        EOF
+echo "🔐 Restoring ownership for web server..."
+sudo chown -R www-data:www-data /var/www/html/course-jenkins-project
+EOF
                     """
                 }
             }
