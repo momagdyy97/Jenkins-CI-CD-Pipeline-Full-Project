@@ -44,9 +44,13 @@ pipeline {
 
                         echo "🐍 Setting up virtualenv..."
                         cd /var/www/html/course-jenkins-project/02-single-server-deployment
-                        rm -rf venv
+                        echo "🧹 Cleaning up old virtualenv if exists..."
+                        sudo rm -rf venv
+                        sudo mkdir venv && sudo chown ubuntu:ubuntu venv
+
                         python3 -m venv venv
                         source venv/bin/activate
+                        pip install --upgrade pip
                         pip install -r requirements.txt
 
                         echo "🧪 Running tests..."
@@ -54,6 +58,9 @@ pipeline {
 
                         echo "🔁 Restarting nginx..."
                         sudo systemctl restart nginx
+
+                        echo "🔐 Restoring ownership for web server..."
+                        sudo chown -R www-data:www-data /var/www/html/course-jenkins-project
                     EOF
                     '''
                 }
