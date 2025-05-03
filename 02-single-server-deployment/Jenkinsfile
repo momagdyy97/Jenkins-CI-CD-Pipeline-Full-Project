@@ -25,13 +25,21 @@ pipeline {
 
         stage('Deploy and Run on Prod') {
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'ssh-key', keyFileVariable: 'MY_SSH_KEY', usernameVariable: 'username')]) {
+                withCredentials([
+                    sshUserPrivateKey(
+                        credentialsId: 'ssh-key',
+                        keyFileVariable: 'MY_SSH_KEY',
+                        usernameVariable: 'username'
+                    )
+                ]) {
                     sh """
                         echo "📤 Uploading package to PROD server..."
                         scp -i \$MY_SSH_KEY -o StrictHostKeyChecking=no myapp.zip \$username@\$SERVER_IP:/home/ubuntu/
 
                         echo "🚀 Connecting to PROD server and deploying..."
-                        ssh -i \$MY_SSH_KEY -o StrictHostKeyChecking=no \$username@\$SERVER_IP <<EOF
+                        ssh -i \$MY_SSH_KEY -o StrictHostKeyChecking=no \$username@\$SERVER_IP << 'EOF'
+                            set -e
+
                             echo "🔍 Unzipping into a temporary directory..."
                             rm -rf /home/ubuntu/tmp_deploy
                             mkdir -p /home/ubuntu/tmp_deploy
@@ -45,9 +53,7 @@ pipeline {
                             echo "🐍 Setting up virtualenv..."
                             cd /var/www/html/course-jenkins-project/02-single-server-deployment
                             echo "🧹 Cleaning up old virtualenv if exists..."
-                            sudo rm -rf venv
-                            sudo mkdir venv && sudo chown ubuntu:ubuntu venv
-
+                            rm -rf venv
                             python3 -m venv venv
                             source venv/bin/activate
                             pip install --upgrade pip
