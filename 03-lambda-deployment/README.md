@@ -1,1 +1,15 @@
-
+- AWS Lambda is a compute service that lets you run code without having to provision or manage servers.
+- Runs Lambda is AWS serverless offering .
+- AWS manages server maintenance, scaling, capacity provisioning, and logging .
+- Trigger -> when you want lambda function to run. -> Perform action you need to.
+- Benefits , serverless , on-demand , automated scaling , simple pricing model
+- Wide service integration
+- Multi language support
+- Deploy Functions as containers 
+- Lambda - Event driven workflow
+-> Lambda -> s3 bucket -> lambda function -> SNS
+-> API gateway -> lambda function -> DynamoDB
+-> Build Microservices
+-> Pay for number of requests your functions receive
+-> Event triggered to call lambda function which is get access to two pieces of information access to event object contain data or metadata  -> context object .-> functionNAme , functionVersion, awsRequestID and etc.
+-> to increase memory of lambda function . which will increase cpu which will increase performance but will require higher cost.
