@@ -1,38 +1,64 @@
 pipeline {
     agent any
 
-    
-    stages {
+    environment {
+        // Extend PATH to ensure pip3/python3 is found even in minimal Jenkins agents
+        PATH = "/usr/bin:/usr/local/bin:${env.PATH}"
+    }
 
+    stages {
         stage('Setup') {
             steps {
-                sh "pip3 install -r lambda-app/tests/requirements.txt"
+                sh '''
+                    echo "🧰 Checking and Installing Python3 and pip3 if needed..."
+                    if ! command -v python3 &> /dev/null; then
+                        echo "Installing python3..."
+                        sudo apt update
+                        sudo apt install -y python3
+                    fi
+
+                    if ! command -v pip3 &> /dev/null; then
+                        echo "Installing pip3..."
+                        sudo apt install -y python3-pip
+                    fi
+
+                    echo "📦 Installing Python test dependencies..."
+                    pip3 install -r lambda-app/tests/requirements.txt
+                '''
             }
         }
+
         stage('Test') {
             steps {
-                sh "pytest"
+                sh '''
+                    echo "🧪 Running unit tests..."
+                    pytest lambda-app/tests
+                '''
             }
         }
 
         stage('Build') {
             steps {
-                sh "sam build -t lambda-app/template.yaml"
-
+                sh '''
+                    echo "🏗️ Building SAM application..."
+                    sam build -t lambda-app/template.yaml
+                '''
             }
         }
+
         stage('Deploy') {
-
             environment {
-                AWS_ACCESS_KEY_ID = credentials('aws-access-key')
-                AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
+                AWS_ACCESS_KEY_ID = credentials('aws-access-key')         // Jenkins credentials
+                AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')     // Jenkins credentials
             }
-            
             steps {
-                sh "sam deploy -t lambda-app/template.yaml --no-confirm-changeset --no-fail-on-empty-changeset"
-
+                sh '''
+                    echo "🚀 Deploying Lambda with SAM..."
+                    sam deploy -t lambda-app/template.yaml \
+                        --no-confirm-changeset \
+                        --no-fail-on-empty-changeset
+                '''
             }
         }
-      
     }
 }
