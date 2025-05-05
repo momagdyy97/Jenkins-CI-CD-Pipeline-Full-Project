@@ -4,7 +4,7 @@ pipeline {
     environment {
         PATH = "/usr/bin:/usr/local/bin:/var/lib/jenkins/.local/bin:${env.PATH}"
         STACK_NAME = "lambda-app"
-        REGION = "London"
+        REGION = "eu-west-2" // ✅ CORRECT AWS region for London
     }
 
     stages {
@@ -18,13 +18,8 @@ pipeline {
                         sleep 5
                     done
 
-                    if ! command -v python3 &> /dev/null; then
-                        sudo apt update && sudo apt install -y python3
-                    fi
-
-                    if ! command -v pip3 &> /dev/null; then
-                        sudo apt update && sudo apt install -y python3-pip
-                    fi
+                    command -v python3 >/dev/null || (sudo apt update && sudo apt install -y python3)
+                    command -v pip3 >/dev/null || (sudo apt update && sudo apt install -y python3-pip)
 
                     echo "📦 Installing Python test dependencies..."
                     pip3 install --user -r 03-lambda-deployment/lambda-app/tests/requirements.txt
@@ -65,7 +60,7 @@ pipeline {
                         --query 'Stacks[0].StackStatus' \
                         --output text 2>/dev/null || echo "NO_STACK")
 
-                    if [[ "$STATUS" == "ROLLBACK_FAILED" || "$STATUS" == "UPDATE_ROLLBACK_FAILED" ]]; then
+                    if [ "$STATUS" = "ROLLBACK_FAILED" ] || [ "$STATUS" = "UPDATE_ROLLBACK_FAILED" ]; then
                         echo "⚠️ Found stack in broken state ($STATUS), deleting..."
                         aws cloudformation delete-stack --stack-name "$STACK_NAME" --region "$REGION"
                         aws cloudformation wait stack-delete-complete --stack-name "$STACK_NAME" --region "$REGION"
@@ -86,7 +81,7 @@ pipeline {
                 sh '''
                     echo "🚀 Deploying Lambda app via SAM..."
                     sam deploy \
-                        --template-file 03-lambda-deployment/lambda-app/template.yaml \
+                        --template-file .aws-sam/build/template.yaml \
                         --stack-name "$STACK_NAME" \
                         --region "$REGION" \
                         --capabilities CAPABILITY_IAM \
