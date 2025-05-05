@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        // Ensure Python3 and pip3 are found
         PATH = "/usr/bin:/usr/local/bin:${env.PATH}"
     }
 
@@ -12,15 +11,20 @@ pipeline {
                 sh '''
                     echo "🧰 Checking and Installing Python3 and pip3 if needed..."
 
+                    # Wait for apt lock release if needed
+                    while sudo fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
+                        echo "⏳ Waiting for other apt process to finish..."
+                        sleep 5
+                    done
+
                     if ! command -v python3 &> /dev/null; then
-                        echo "Installing python3..."
-                        sudo apt update
-                        sudo apt install -y python3
+                        echo "📦 Installing python3..."
+                        sudo apt update && sudo apt install -y python3
                     fi
 
                     if ! command -v pip3 &> /dev/null; then
-                        echo "Installing pip3..."
-                        sudo apt install -y python3-pip
+                        echo "📦 Installing pip3..."
+                        sudo apt update && sudo apt install -y python3-pip
                     fi
 
                     echo "📦 Installing Python test dependencies..."
