@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        PATH = "/usr/bin:/usr/local/bin:${env.PATH}"
+        PATH = "/usr/bin:/usr/local/bin:/var/lib/jenkins/.local/bin:${env.PATH}"
     }
 
     stages {
@@ -28,7 +28,7 @@ pipeline {
                     fi
 
                     echo "📦 Installing Python test dependencies..."
-                    pip3 install -r 03-lambda-deployment/lambda-app/tests/requirements.txt
+                    pip3 install --user -r 03-lambda-deployment/lambda-app/tests/requirements.txt
                 '''
             }
         }
