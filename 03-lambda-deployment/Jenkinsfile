@@ -3,6 +3,8 @@ pipeline {
 
     environment {
         PATH = "/usr/bin:/usr/local/bin:/var/lib/jenkins/.local/bin:${env.PATH}"
+        STACK_NAME = "lambda-app"
+        REGION = "us-east-1"
     }
 
     stages {
@@ -11,19 +13,16 @@ pipeline {
                 sh '''
                     echo "🧰 Checking and Installing Python3 and pip3 if needed..."
 
-                    # Wait for apt lock release if needed
                     while sudo fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
-                        echo "⏳ Waiting for other apt process to finish..."
+                        echo "⏳ Waiting for apt lock to release..."
                         sleep 5
                     done
 
                     if ! command -v python3 &> /dev/null; then
-                        echo "📦 Installing python3..."
                         sudo apt update && sudo apt install -y python3
                     fi
 
                     if ! command -v pip3 &> /dev/null; then
-                        echo "📦 Installing pip3..."
                         sudo apt update && sudo apt install -y python3-pip
                     fi
 
@@ -51,6 +50,33 @@ pipeline {
             }
         }
 
+        stage('Clean Previous Stack If Broken') {
+            environment {
+                AWS_ACCESS_KEY_ID     = credentials('aws-access-key')
+                AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
+            }
+            steps {
+                sh '''
+                    echo "🔍 Checking CloudFormation stack state..."
+
+                    STATUS=$(aws cloudformation describe-stacks \
+                        --stack-name "$STACK_NAME" \
+                        --region "$REGION" \
+                        --query 'Stacks[0].StackStatus' \
+                        --output text 2>/dev/null || echo "NO_STACK")
+
+                    if [[ "$STATUS" == "ROLLBACK_FAILED" || "$STATUS" == "UPDATE_ROLLBACK_FAILED" ]]; then
+                        echo "⚠️ Found stack in broken state ($STATUS), deleting..."
+                        aws cloudformation delete-stack --stack-name "$STACK_NAME" --region "$REGION"
+                        aws cloudformation wait stack-delete-complete --stack-name "$STACK_NAME" --region "$REGION"
+                        echo "✅ Stack deleted successfully."
+                    else
+                        echo "✅ Stack is either fine or not found: $STATUS"
+                    fi
+                '''
+            }
+        }
+
         stage('Deploy') {
             environment {
                 AWS_ACCESS_KEY_ID     = credentials('aws-access-key')
@@ -58,8 +84,12 @@ pipeline {
             }
             steps {
                 sh '''
-                    echo "🚀 Deploying to AWS Lambda..."
-                    sam deploy -t 03-lambda-deployment/lambda-app/template.yaml \
+                    echo "🚀 Deploying Lambda app via SAM..."
+                    sam deploy \
+                        --template-file 03-lambda-deployment/lambda-app/template.yaml \
+                        --stack-name "$STACK_NAME" \
+                        --region "$REGION" \
+                        --capabilities CAPABILITY_IAM \
                         --no-confirm-changeset \
                         --no-fail-on-empty-changeset
                 '''
