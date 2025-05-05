@@ -4,7 +4,8 @@ pipeline {
     environment {
         PATH = "/usr/bin:/usr/local/bin:/var/lib/jenkins/.local/bin:${env.PATH}"
         STACK_NAME = "lambda-app"
-        REGION = "eu-west-2" // ✅ CORRECT AWS region for London
+        REGION = "eu-west-2"
+        S3_BUCKET = "sam-artifacts-momagdyy97"  // ✅ You must create this bucket in advance!
     }
 
     stages {
@@ -84,6 +85,7 @@ pipeline {
                         --template-file .aws-sam/build/template.yaml \
                         --stack-name "$STACK_NAME" \
                         --region "$REGION" \
+                        --s3-bucket "$S3_BUCKET" \
                         --capabilities CAPABILITY_IAM \
                         --no-confirm-changeset \
                         --no-fail-on-empty-changeset
