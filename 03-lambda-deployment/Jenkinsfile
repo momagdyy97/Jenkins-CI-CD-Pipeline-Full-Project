@@ -4,7 +4,7 @@ pipeline {
     environment {
         PATH = "/usr/bin:/usr/local/bin:/var/lib/jenkins/.local/bin:${env.PATH}"
         STACK_NAME = "lambda-app"
-        REGION = "us-east-1"
+        REGION = "London"
     }
 
     stages {
