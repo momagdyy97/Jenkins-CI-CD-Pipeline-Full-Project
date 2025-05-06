@@ -14,7 +14,7 @@ N
 Y
 SAM dash App
 cd sam-app
-sam build 
+sam build or sam build -t lambda-app\template.yml
 sam deploy
 sam delete
 Note:- Take care and look in Jenkinsfile and template.yml file.
