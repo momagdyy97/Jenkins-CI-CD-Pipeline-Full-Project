@@ -2,51 +2,51 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = 'momousa1997/flask-app:latest'
-        IMAGE_TAG = "${IMAGE_NAME}:${env.GIT_COMMIT}"
-        
+        IMAGE_NAME = 'momousa1997/flask-app'
+        IMAGE_TAG = "${IMAGE_NAME}:${env.BUILD_NUMBER}"
     }
 
-    
     stages {
-
         stage('Setup') {
             steps {
-                sh "pip install -r requirements.txt"
+                dir('04-docker') {
+                    sh 'pip install -r requirements.txt'
+                }
             }
         }
+
         stage('Test') {
             steps {
-                sh "pytest"
+                dir('04-docker') {
+                    sh 'pytest'
+                }
             }
         }
 
-        stage('Login to docker hub') {
+        stage('Login to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-creds', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                sh 'echo ${PASSWORD} | docker login -u ${USERNAME} --password-stdin'}
-                echo 'Login successfully'
+                    sh 'echo $PASSWORD | docker login -u $USERNAME --password-stdin'
+                    echo 'Login successful'
+                }
             }
         }
 
-        stage('Build Docker Image')
-        {
-            steps
-            {
-                sh 'docker build -t ${IMAGE_TAG} .'
-                echo "Docker image build successfully"
-                sh 'docker image ls'
-                
+        stage('Build Docker Image') {
+            steps {
+                dir('04-docker') {
+                    sh 'docker build -t $IMAGE_TAG .'
+                    echo "Docker image built successfully"
+                    sh 'docker image ls'
+                }
             }
         }
 
-        stage('Push Docker Image')
-        {
-            steps
-            {
-                sh 'docker push ${IMAGE_TAG}'
-                echo "Docker image push successfully"
+        stage('Push Docker Image') {
+            steps {
+                sh 'docker push $IMAGE_TAG'
+                echo "Docker image pushed successfully"
             }
-        }      
+        }
     }
 }
