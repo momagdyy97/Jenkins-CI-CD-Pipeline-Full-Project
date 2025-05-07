@@ -4,7 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = 'momousa1997/flask-app'
         IMAGE_TAG = "${IMAGE_NAME}:${env.BUILD_NUMBER}"
-        VENV_DIR = '.venv'  // virtual environment path
+        PATH = "/var/lib/jenkins/.local/bin:$PATH"
     }
 
     stages {
@@ -12,10 +12,8 @@ pipeline {
             steps {
                 dir('04-docker') {
                     sh '''
-                        python3 -m venv $VENV_DIR
-                        . $VENV_DIR/bin/activate
-                        pip install --upgrade pip
-                        pip install -r requirements.txt
+                        pip install --user --upgrade pip
+                        pip install --user -r requirements.txt
                     '''
                 }
             }
@@ -25,8 +23,7 @@ pipeline {
             steps {
                 dir('04-docker') {
                     sh '''
-                        . $VENV_DIR/bin/activate
-                        pytest
+                        ~/.local/bin/pytest
                     '''
                 }
             }
@@ -44,16 +41,20 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 dir('04-docker') {
-                    sh 'docker build -t $IMAGE_TAG .'
+                    sh '''
+                        docker build -t $IMAGE_TAG .
+                        docker image ls
+                    '''
                     echo "Docker image built successfully"
-                    sh 'docker image ls'
                 }
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                sh 'docker push $IMAGE_TAG'
+                sh '''
+                    docker push $IMAGE_TAG
+                '''
                 echo "Docker image pushed successfully"
             }
         }
