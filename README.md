@@ -100,15 +100,10 @@ aws eks update-kubeconfig --region eu-west-2 --name prod
 
 # Verify connection
 kubectl get nodes
+
 👤 Maintained by
 Mohamed Magdy
 AWS DevOps & Cloud Engineer
-
-🌍 LinkedIn
-
-🐙 GitHub
-
-📫 Email: momagdyvmware@outlook.com
 
 📄 License
 This repository is based on KodeKloud's Jenkins course, extended under fair use for learning, customization, and deployment practice. Original copyright belongs to the respective authors.
