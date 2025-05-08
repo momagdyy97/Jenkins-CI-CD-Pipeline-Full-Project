@@ -12,38 +12,49 @@ pipeline {
     }
 
     stages {
-        stage('Setup') {
+        stage('Setup Python Environment') {
             steps {
                 dir('04-docker') {
                     sh '''
-                        echo "Setting up Python environment"
+                        echo "[INFO] Upgrading pip and installing requirements..."
                         pip install --user --upgrade pip
                         pip install --user -r requirements.txt
                     '''
                 }
+            }
+        }
+
+        stage('Configure Kubeconfig') {
+            steps {
                 sh '''
-                    echo "Setting KUBECONFIG permissions"
+                    echo "[INFO] Verifying KUBECONFIG permissions..."
                     ls -la $KUBECONFIG
-                    chmod 644 $KUBECONFIG
-                    ls -la $KUBECONFIG
+                    chmod 600 $KUBECONFIG
+                    export KUBECONFIG=$KUBECONFIG
+                    kubectl version --client
                 '''
             }
         }
 
-        stage('Test') {
+        stage('Run Unit Tests') {
             steps {
                 dir('04-docker') {
-                    sh '~/.local/bin/pytest'
+                    sh '''
+                        echo "[INFO] Running Pytest..."
+                        ~/.local/bin/pytest
+                    '''
                 }
             }
         }
 
-        stage('Login to Docker Hub') {
+        stage('Docker Login') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-creds', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                    sh 'echo $PASSWORD | docker login -u $USERNAME --password-stdin'
+                    sh '''
+                        echo "[INFO] Logging into Docker Hub..."
+                        echo $PASSWORD | docker login -u $USERNAME --password-stdin
+                    '''
                 }
-                echo 'Docker Hub login successful'
             }
         }
 
@@ -51,6 +62,7 @@ pipeline {
             steps {
                 dir('04-docker') {
                     sh '''
+                        echo "[INFO] Building Docker image..."
                         docker build -t $IMAGE_TAG .
                         docker image ls
                     '''
@@ -60,28 +72,32 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                sh 'docker push $IMAGE_TAG'
-                echo 'Docker image pushed successfully'
+                sh '''
+                    echo "[INFO] Pushing Docker image to Docker Hub..."
+                    docker push $IMAGE_TAG
+                '''
             }
         }
-        
-        stage('Acceptance Test') {
+
+        stage('Acceptance Test (k6)') {
             steps {
                 script {
+                    echo "[INFO] Resolving LoadBalancer endpoint for flask-app-service..."
                     def service = sh(
                         script: "kubectl get svc flask-app-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}:{.spec.ports[0].port}'",
                         returnStdout: true
                     ).trim()
-                    echo "Service URL: ${service}"
+                    echo "🧪 Service Under Test: ${service}"
                     sh "k6 run -e SERVICE=${service} acceptance-test.js"
                 }
             }
         }
 
-        stage('Deploy to Prod') {
+        stage('Deploy to PROD') {
             steps {
                 sh '''
-                    echo "Deploying to PROD cluster..."
+                    echo "[INFO] Deploying image to PROD cluster..."
+                    export KUBECONFIG=$KUBECONFIG
                     kubectl config use-context arn:aws:eks:eu-west-2:568645574857:cluster/prod
                     kubectl config current-context
                     kubectl set image deployment/flask-app flask-app=$IMAGE_TAG
