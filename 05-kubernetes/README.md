@@ -1,132 +1,161 @@
-**-------------------------------------------------------**
-**Container Orchestrators**
-- They are the brains of a containerized environments.
-**-------------------------------------------------------**
-**Reponsibilities**
-- Deploying containers across all available servers.
-- Load-balancing requests to containers.
-- Providing container to container connectivity.
-- Restarting failed containers.
-- Move containers when hosts fails.
-**-------------------------------------------------------**
-**Kubernetes Architecture**
-- Kubernetes is an open-source container orchestrator.
-- Kubernetes cluster has two types of nodes:-
-    - Control-Plane nodes - managers of the cluster
-        - Watch over cluster and make sure cluster is kept in a safe working state.
-    - Worker-Nodes - responsible for actually running the containerized workloads.
-**-------------------------------------------------------**
-- AWS ELASTIC KUBERNETES SERVICES is managed Kubernetes service.
-- EKS manages the control-plane for you.
-- Users are still responsible for managing worker nodes.
-    - Unless you descide to use Fargate (AWS will manage the nodes).
-Benefits:-
-- Runs & Scales control-plane across multiple availability zones.
-- Scales control-plane instances based on load.
-- Can integrate with other AWS services.
-- IAM for authentication.
-- Elastic Load Balancer.
-- ECR for container images.
-**-------------------------------------------------------**
-- Kubernetes Pods:- They are the smallest deployable units of Kubernetes. In its most basic definition, a Pod is a single running instance of a process in a cluster, possibly compromising many containers managed as a single unit by Kubernetes.
---------------
-pods.yml
---------------
-apiVersion:v1
+# 🧠 Kubernetes + Jenkins CI/CD + AWS EKS Orchestration Guide
+
+This document outlines the architecture, configuration, and deployment process for container orchestration using **Kubernetes**, **AWS Elastic Kubernetes Service (EKS)**, and **Jenkins CI/CD**.
+
+---
+
+## 🧭 Container Orchestrators
+
+Container orchestrators are the **brain of modern containerized infrastructure**. Their responsibilities include:
+
+- 🚀 Deploying containers across available nodes
+- ⚖️ Load-balancing requests to container instances
+- 🔗 Managing inter-container communication
+- ♻️ Restarting failed containers automatically
+- 📦 Rescheduling containers if a host fails
+
+---
+
+## ⚙️ Kubernetes Architecture
+
+Kubernetes is an open-source container orchestrator designed to automate deployment, scaling, and operations of application containers.
+
+### Node Types:
+- **Control Plane Nodes**  
+  Responsible for cluster management and orchestration.
+  
+- **Worker Nodes**  
+  Execute container workloads and run Kubernetes objects like Pods.
+
+---
+
+## ☁️ AWS Elastic Kubernetes Service (EKS)
+
+**EKS** is Amazon’s managed Kubernetes service. It offloads control plane management to AWS, while allowing flexibility in node provisioning.
+
+### Key Benefits:
+- High availability across multiple **Availability Zones**
+- Integrated with **IAM**, **Elastic Load Balancer**, and **ECR**
+- Auto-scaling and control plane load management
+- Optionally use **Fargate** to eliminate node management
+
+---
+
+## 📦 Kubernetes Pods
+
+Pods are the **smallest deployable unit in Kubernetes** — typically one or more containers sharing storage/network and executed together.
+
+```yaml
+# pods.yaml
+apiVersion: v1
 kind: Pod
 metadata:
-  name:myapp
+  name: myapp
   labels:
-    name:myapp
+    name: myapp
 spec:
   containers:
-  - name:myapp
-    image: momousa1997/flask-app:latest
-    resources:
-      limits:
-        memory:"128Mi"
-        cpu: "500m"
+    - name: myapp
+      image: momousa1997/flask-app:latest
+      resources:
+        limits:
+          memory: "128Mi"
+          cpu: "500m"
       ports:
-       - containerPort:5000
-- kubectl apply -f pod.yml
-**-------------------------------------------------------**
-Kubernetes: Deployments
-- They watch over pods and restart failed pods.
-- They scale number of pod instances.
-- Provides upgraded and rollback functionality
------------------
-deployment.yaml
------------------
+        - containerPort: 5000
+Apply:
+
+bash
+Copy code
+kubectl apply -f pods.yaml
+📦 Kubernetes Deployments
+Deployments manage Pods and ReplicaSets, enabling:
+
+Auto-scaling
+
+Self-healing (pod restarts)
+
+Rolling updates and rollbacks
+
+yaml
+Copy code
+# deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name:myapp
+  name: myapp
 spec:
-  replicas:3
+  replicas: 3
   selector:
     matchLabels:
-      app:myapp
+      app: myapp
   template:
     metadata:
       labels:
-        app:myapp
+        app: myapp
     spec:
       containers:
-      - name:myapp
-        image: momousa1997/flask-app:latest
-        resources:
-          limits:
-            memory:"128Mi"
-            cpu: "500m"
+        - name: myapp
+          image: momousa1997/flask-app:latest
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
           ports:
-          - containerPort:5000
-- kubectl apply -f deployment.yaml
-**-------------------------------------------------------**
-kubeconfig file:- It provides all of the configuration and information necessary to connect to and authenticate with various kubernetes clusters that you and organization utilize. -> by default will look for the file first to find information about the cluster.
----------------------------------------------------------------------------------------------------------------------------------------
-- $HOME/.kube/config/ 
-- We can add it as environment variable -> KUBECONFIG
-**---------------------------------------------------------------------------------------------------------------------------------------**
+            - containerPort: 5000
+Apply:
+
+bash
+Copy code
+kubectl apply -f deployment.yaml
+📁 Kubeconfig Explained
+kubeconfig is the config file used by kubectl to connect to Kubernetes clusters.
+
+Default location:
+bash
+Copy code
+$HOME/.kube/config
+Use cases:
+Set as KUBECONFIG environment variable
+
+Switch context with:
+
+bash
+Copy code
+kubectl config use-context cluster1
+kubectl config use-context cluster2
+Example structure:
+yaml
+Copy code
 apiVersion: v1
 clusters:
 - cluster:
-    server: https://192.168.54.19:8443
-  name: cluster2
-- cluster:
     server: https://192.168.59.123:8443
   name: cluster1
-contexts: // Where you bind user to the cluster
+contexts:
 - context:
     cluster: cluster1
     user: john
   name: john@cluster1
-- context:
-    cluster: cluster2
-    user: mike
-  name: mike@cluster2
-  current-context: cluster1
-kind: config
-preferences: {}
+current-context: john@cluster1
 users:
 - name: john
   user:
-    client-certificate:
-    client-key:
-- name: mike
-  user:
-    client-certificate:
-    client-key
-**---------------------------------------------------------------------------------------------------------------------------------------**
-Kubernetes: Kubeconfig
-Directory: $HOME/.kube/config
-Enironment Variable: KUBECONFIG
-Command Line Argument: Kubectl --kubeconfig <path-to-file>
+    client-certificate: path/to/cert
+    client-key: path/to/key
+🔁 Jenkins CI/CD Pipeline for EKS Deployment
+This pipeline:
 
-kubectl config use-context cluster1
-kubectl config use-context cluster2
-**---------------------------------------------------------------------------------------------------------------------------------------**
-Jenkins pipeline:-
-------------------
+Installs Python dependencies
+
+Runs tests
+
+Builds + pushes Docker images
+
+Deploys to staging and prod EKS clusters
+
+groovy
+Copy code
 pipeline {
     agent any
 
@@ -134,7 +163,6 @@ pipeline {
         IMAGE_NAME = 'momousa1997/flask-app'
         IMAGE_TAG = "${IMAGE_NAME}:${env.BUILD_NUMBER}"
         PATH = "/var/lib/jenkins/.local/bin:$PATH"
-
         KUBECONFIG = credentials('kubeconfig-credentials-id')
         AWS_ACCESS_KEY_ID = credentials('aws-access-key')
         AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
@@ -145,16 +173,12 @@ pipeline {
             steps {
                 dir('04-docker') {
                     sh '''
-                        echo "Setting up Python environment"
                         pip install --user --upgrade pip
                         pip install --user -r requirements.txt
                     '''
                 }
                 sh '''
-                    echo "Setting KUBECONFIG permissions"
-                    ls -la $KUBECONFIG
                     chmod 644 $KUBECONFIG
-                    ls -la $KUBECONFIG
                 '''
             }
         }
@@ -172,17 +196,13 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'docker-creds', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                     sh 'echo $PASSWORD | docker login -u $USERNAME --password-stdin'
                 }
-                echo 'Docker Hub login successful'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 dir('04-docker') {
-                    sh '''
-                        docker build -t $IMAGE_TAG .
-                        docker image ls
-                    '''
+                    sh 'docker build -t $IMAGE_TAG .'
                 }
             }
         }
@@ -190,16 +210,13 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 sh 'docker push $IMAGE_TAG'
-                echo 'Docker image pushed successfully'
             }
         }
 
         stage('Deploy to Staging') {
             steps {
                 sh '''
-                    echo "Deploying to STAGING cluster..."
                     kubectl config use-context arn:aws:eks:eu-west-2:568645574857:cluster/staging
-                    kubectl config current-context
                     kubectl set image deployment/flask-app flask-app=$IMAGE_TAG
                 '''
             }
@@ -221,18 +238,18 @@ pipeline {
         stage('Deploy to Prod') {
             steps {
                 sh '''
-                    echo "Deploying to PROD cluster..."
                     kubectl config use-context arn:aws:eks:eu-west-2:568645574857:cluster/prod
-                    kubectl config current-context
                     kubectl set image deployment/flask-app flask-app=$IMAGE_TAG
                 '''
             }
         }
     }
 }
-------------------------------------------------------------------------------------------------------
-Important Commands:-
-- eksctl create cluster \
+🧪 Useful Commands Cheat Sheet
+bash
+Copy code
+# Create EKS cluster
+eksctl create cluster \
   --name prod \
   --region eu-west-2 \
   --nodegroup-name prod-nodes \
@@ -241,18 +258,24 @@ Important Commands:-
   --nodes-min 1 \
   --nodes-max 3 \
   --managed
-- eksctl create addon --name vpc-cni --cluster prod --region eu-west-2 --force
-- aws eks update-kubeconfig --region eu-west-2 --name prod
-- kubectl config current-context
-- kubectl config use-context arn:aws:eks:eu-west-2:568645574857:cluster/prod
-- kubectl get nodes
-- kubectl get pods -A
-- Install Core Add-ons (like VPC CNI, CoreDNS, etc):
+
+# Addons
 eksctl create addon --name vpc-cni --cluster prod --region eu-west-2 --force
 eksctl create addon --name kube-proxy --cluster prod --region eu-west-2 --force
 eksctl create addon --name coredns --cluster prod --region eu-west-2 --force
-- Patch IAM access (if not done):
-If you want your IAM user (e.g., mmagdy) to run kubectl and administer the cluster:
+
+# Update kubeconfig
+aws eks update-kubeconfig --region eu-west-2 --name prod
+
+# Cluster context
+kubectl config use-context arn:aws:eks:eu-west-2:568645574857:cluster/prod
+kubectl get nodes
+kubectl get pods -A
+🔐 IAM Access for kubectl via ConfigMap Patch
+To grant an IAM user admin access to EKS:
+
+yaml
+Copy code
 # aws-auth-patch.yaml
 apiVersion: v1
 kind: ConfigMap
@@ -261,7 +284,7 @@ metadata:
   namespace: kube-system
 data:
   mapRoles: |
-    - rolearn: arn:aws:iam::568645574857:role/eksctl-prod-nodegroup-prod-nodes-NodeInstanceRole-<suffix>
+    - rolearn: arn:aws:iam::568645574857:role/eksctl-prod-nodegroup-prod-nodes-NodeInstanceRole-XYZ
       username: system:node:{{EC2PrivateDNSName}}
       groups:
         - system:bootstrappers
@@ -271,5 +294,16 @@ data:
       username: mmagdy
       groups:
         - system:masters
---------------------------------------------------------
+Apply:
 
+bash
+Copy code
+kubectl apply -f aws-auth-patch.yaml
+📚 Resources
+Kubernetes Docs
+
+AWS EKS Docs
+
+eksctl CLI
+
+Jenkins Pipeline Syntax
