@@ -66,7 +66,6 @@ spec:
 Apply:
 
 bash
-Copy code
 kubectl apply -f pods.yaml
 📦 Kubernetes Deployments
 Deployments manage Pods and ReplicaSets, enabling:
@@ -78,7 +77,6 @@ Self-healing (pod restarts)
 Rolling updates and rollbacks
 
 yaml
-Copy code
 # deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -106,7 +104,6 @@ spec:
 Apply:
 
 bash
-Copy code
 kubectl apply -f deployment.yaml
 📁 Kubeconfig Explained
 kubeconfig is the config file used by kubectl to connect to Kubernetes clusters.
@@ -155,7 +152,6 @@ Builds + pushes Docker images
 Deploys to staging and prod EKS clusters
 
 groovy
-Copy code
 pipeline {
     agent any
 
@@ -247,7 +243,6 @@ pipeline {
 }
 🧪 Useful Commands Cheat Sheet
 bash
-Copy code
 # Create EKS cluster
 eksctl create cluster \
   --name prod \
@@ -275,7 +270,6 @@ kubectl get pods -A
 To grant an IAM user admin access to EKS:
 
 yaml
-Copy code
 # aws-auth-patch.yaml
 apiVersion: v1
 kind: ConfigMap
@@ -295,15 +289,4 @@ data:
       groups:
         - system:masters
 Apply:
-
-bash
-Copy code
 kubectl apply -f aws-auth-patch.yaml
-📚 Resources
-Kubernetes Docs
-
-AWS EKS Docs
-
-eksctl CLI
-
-Jenkins Pipeline Syntax
