@@ -290,3 +290,5 @@ data:
         - system:masters
 Apply:
 kubectl apply -f aws-auth-patch.yaml
+
+when you want to add credentials -> for kubeconfig -> go to c -> users -> .lube -> config -> under id add kubeconfig-credentials-id 
