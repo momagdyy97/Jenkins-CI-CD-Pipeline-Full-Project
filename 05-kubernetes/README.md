@@ -291,4 +291,8 @@ data:
 Apply:
 kubectl apply -f aws-auth-patch.yaml
 
-when you want to add credentials -> for kubeconfig -> go to c -> users -> .lube -> config -> under id add kubeconfig-credentials-id 
+when you want to add credentials -> for kubeconfig -> go to c -> users -> .lube -> config -> under id add kubeconfig-credentials-id
+
+kubectl create namespace staging
+
+kubectl create namespace production
