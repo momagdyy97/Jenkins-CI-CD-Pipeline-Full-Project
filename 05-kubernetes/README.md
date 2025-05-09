@@ -296,3 +296,120 @@ when you want to add credentials -> for kubeconfig -> go to c -> users -> .lube 
 kubectl create namespace staging
 
 kubectl create namespace production
+
+Objective: Learn about Kubernetes pod
+
+Draft a Kubernetes pod definition in a YAML file, specifying the container nginx and exposing it on port 8080.
+Deploy the pod to your Kubernetes cluster using Kubectl.
+
+Deploy the pod using the below manifest file.
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: webapp
+  labels:
+    app: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx:latest
+    ports:
+    - containerPort: 8080
+
+Objective: Learn how to implement downtime and no downtime deployment strategies
+
+Edit the /root/deployment_production.yaml manifest file to use rolling update strategy with the below specifications and deploy it.
+
+maxUnavailable: 1
+maxSurge: 1
+Edit the /root/deployment_staging.yaml manifest file to use the Recreate strategy and deploy it.
+
+Include the RollingUpdate strategy in the /root/deployment_production.yaml manifest as specified below and then deploy it.
+
+ selector:
+    matchLabels:
+      app: flask-app
+  strategy:                         #added
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1                   #end
+  template:
+    metadata:
+Include the Recreate strategy in the deployment_staging.yaml manifest as specified below and then deploy it.
+
+selector:
+    matchLabels:
+      app: flask-app
+  strategy:                        #added
+   type: Recreate                  #end
+  template:
+    metadata:
+      labels:
+        app: flask-app
+
+Objective: Learn how to deploy container app to the EKS cluster using Jenkins CI/CD pipeline
+
+Add your EKS cluster credentials to Jenkins as a secret file named kubeconfig for access
+
+Add a new stage named Deploy to EKS Prod env to the deployToProd pipeline to deploy the application to EKS using kubectl commands, with the manifest file deployment_production.yaml already present in the repo.
+
+repo- https://github.com/kodekloudhub/jenkins-project.git
+
+Run the Jenkins pipeline to automate the deployment process
+
+Jenkins Credentials:
+User: admin
+Password: Adm!n321
+
+Install AWS Credentials plugin
+Create a new credential of kind aws credentials and name it aws.
+Create a secret file type credential named kubeconfig for access
+Append the stage to the deployToProd job to deploy the application to the EKS cluster
+pipeline {
+    agent any
+        environment {
+        KUBECONFIG = credentials('kubeconfig')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                sh 'git clone https://github.com/kodekloudhub/jenkins-project.git'
+                sh "ls -ltr"
+            }
+        }
+        stage('Approve Default Image') {
+            steps {
+                script {
+                    env.PARAMETER_VALUE = 'sanjeevkt720/jenkins-flask-app:v5'
+                    echo 'Using default Docker image: ${env.PARAMETER_VALUE}'
+                }
+            }
+        }
+        stage('Deploy to EKS Prod env')     #added
+            {
+            steps
+                {
+                script 
+                    {   
+                        withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY', credentialsId: 'aws')]) {
+                        def deploymentExists = sh(script: "kubectl get deployment flask-app-deployment-prod -n prod  -o json", returnStatus: true)
+                            if (deploymentExists == 0) 
+                                {
+                                    sh "kubectl set image -n prod deployment/flask-app-deployment-prod flask-app=${env.PARAMETER_VALUE} --record"
+                                    echo "Kubernetes deployment updated successfully"
+                                } 
+                            else 
+                                {
+                                    sh "kubectl apply -f jenkins-project/deployment_production.yaml"
+                                    echo "Kubernetes deployment created successfully"
+                                }
+                        }
+                    }
+                }
+            }
+    }
+}
+
