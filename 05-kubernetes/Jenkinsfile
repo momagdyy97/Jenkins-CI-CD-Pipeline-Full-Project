@@ -5,7 +5,6 @@ pipeline {
         IMAGE_NAME = 'momousa1997/flask-app'
         IMAGE_TAG = "${IMAGE_NAME}:${env.BUILD_NUMBER}"
         PATH = "/var/lib/jenkins/.local/bin:$PATH"
-
         KUBECONFIG = credentials('kubeconfig-credentials-id')
         AWS_ACCESS_KEY_ID = credentials('aws-access-key')
         AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
@@ -16,6 +15,7 @@ pipeline {
             steps {
                 dir('04-docker') {
                     sh '''
+                        set -e
                         echo "[INFO] Setting up Python environment..."
                         pip install --user --upgrade pip
                         pip install --user -r requirements.txt
@@ -27,6 +27,7 @@ pipeline {
         stage('Configure Kubeconfig') {
             steps {
                 sh '''
+                    set -e
                     echo "[INFO] Configuring kubeconfig..."
                     chmod 600 $KUBECONFIG
                     export KUBECONFIG=$KUBECONFIG
@@ -39,30 +40,23 @@ pipeline {
             steps {
                 dir('04-docker') {
                     sh '''
-                        echo "[INFO] Running Pytest..."
+                        set -e
+                        echo "[INFO] Running Unit Tests with Pytest..."
                         ~/.local/bin/pytest
                     '''
                 }
             }
         }
 
-        stage('Docker Login') {
+        stage('Docker Login & Build') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-creds', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                     sh '''
+                        set -e
                         echo "[INFO] Logging into Docker Hub..."
                         echo $PASSWORD | docker login -u $USERNAME --password-stdin
-                    '''
-                }
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                dir('04-docker') {
-                    sh '''
                         echo "[INFO] Building Docker image..."
-                        docker build -t $IMAGE_TAG .
+                        docker build -t $IMAGE_TAG ./04-docker
                         docker image ls
                     '''
                 }
@@ -72,8 +66,45 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 sh '''
+                    set -e
                     echo "[INFO] Pushing Docker image to Docker Hub..."
                     docker push $IMAGE_TAG
+                    docker logout
+                '''
+            }
+        }
+
+        stage('Deploy to PROD Cluster') {
+            steps {
+                sh '''
+                    set -e
+                    echo "[INFO] Switching to PROD Cluster..."
+                    export KUBECONFIG=$KUBECONFIG
+                    kubectl config use-context arn:aws:eks:eu-west-2:568645574857:cluster/prod
+                    kubectl config current-context
+                '''
+            }
+        }
+
+        stage('Apply Kubernetes Manifests') {
+            steps {
+                sh '''
+                    set -e
+                    echo "[INFO] Applying Kubernetes Deployment and Service manifests..."
+                    kubectl apply -f k8s/deployment.yaml
+                    kubectl apply -f k8s/service.yaml
+                '''
+            }
+        }
+
+        stage('Update Deployment Image') {
+            steps {
+                sh '''
+                    set -e
+                    echo "[INFO] Updating Deployment with new Docker Image..."
+                    kubectl set image deployment/flask-app flask-app=$IMAGE_TAG
+                    echo "[INFO] Waiting for rollout to complete..."
+                    kubectl rollout status deployment/flask-app --timeout=120s
                 '''
             }
         }
@@ -88,7 +119,6 @@ pipeline {
                     ).trim()
                     echo "🧪 Running k6 Acceptance Test on Service: ${service}"
 
-                    // Run k6 and fail the build if test thresholds are not met
                     def k6Result = sh(
                         script: "k6 run -e SERVICE=${service} acceptance-test.js",
                         returnStatus: true
@@ -101,17 +131,16 @@ pipeline {
                 }
             }
         }
-
-        stage('Deploy to PROD') {
-            steps {
-                sh '''
-                    echo "[INFO] Deploying to PROD cluster..."
-                    export KUBECONFIG=$KUBECONFIG
-                    kubectl config use-context arn:aws:eks:eu-west-2:568645574857:cluster/prod
-                    kubectl config current-context
-                    kubectl set image deployment/flask-app flask-app=$IMAGE_TAG
-                '''
-            }
+    }
+    post {
+        always {
+            echo "[INFO] Cleaning up temporary files if any..."
+        }
+        failure {
+            echo "🚨 Build Failed! Check logs for details."
+        }
+        success {
+            echo "🎉 Build and Deployment Completed Successfully!"
         }
     }
 }
