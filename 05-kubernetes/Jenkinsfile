@@ -16,7 +16,7 @@ pipeline {
             steps {
                 dir('04-docker') {
                     sh '''
-                        echo "[INFO] Upgrading pip and installing requirements..."
+                        echo "[INFO] Setting up Python environment..."
                         pip install --user --upgrade pip
                         pip install --user -r requirements.txt
                     '''
@@ -27,8 +27,7 @@ pipeline {
         stage('Configure Kubeconfig') {
             steps {
                 sh '''
-                    echo "[INFO] Verifying KUBECONFIG permissions..."
-                    ls -la $KUBECONFIG
+                    echo "[INFO] Configuring kubeconfig..."
                     chmod 600 $KUBECONFIG
                     export KUBECONFIG=$KUBECONFIG
                     kubectl version --client
@@ -87,8 +86,18 @@ pipeline {
                         script: "kubectl get svc flask-app-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}:{.spec.ports[0].port}'",
                         returnStdout: true
                     ).trim()
-                    echo "🧪 Service Under Test: ${service}"
-                    sh "k6 run -e SERVICE=${service} acceptance-test.js"
+                    echo "🧪 Running k6 Acceptance Test on Service: ${service}"
+
+                    // Run k6 and fail the build if test thresholds are not met
+                    def k6Result = sh(
+                        script: "k6 run -e SERVICE=${service} acceptance-test.js",
+                        returnStatus: true
+                    )
+                    if (k6Result != 0) {
+                        error "❌ k6 Acceptance Tests Failed! Check performance metrics."
+                    } else {
+                        echo "✅ k6 Acceptance Tests Passed!"
+                    }
                 }
             }
         }
@@ -96,7 +105,7 @@ pipeline {
         stage('Deploy to PROD') {
             steps {
                 sh '''
-                    echo "[INFO] Deploying image to PROD cluster..."
+                    echo "[INFO] Deploying to PROD cluster..."
                     export KUBECONFIG=$KUBECONFIG
                     kubectl config use-context arn:aws:eks:eu-west-2:568645574857:cluster/prod
                     kubectl config current-context
