@@ -1,13 +1,23 @@
-import http from "k6/http";
-import { sleep } from "k6";
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
 export const options = {
-  vus: 10,
-  duration: "10s",
-  thresholds: {
-    http_req_duration: ["p(90)<10000"], // 90 percent of response times must be below 600ms
-  },
+    vus: 10,
+    duration: '10s',
+    thresholds: {
+        http_req_duration: ['p(90)<1000'], // 90% of requests must be under 1s
+        http_req_failed: ['rate<0.01'],    // Error rate must be less than 1%
+    },
 };
+
 export default function () {
-  http.get(`http://${__ENV.SERVICE}`);
-  sleep(1);
+    const url = `http://${__ENV.SERVICE}`;
+    const res = http.get(url);
+
+    check(res, {
+        'status is 200': (r) => r.status === 200,
+        'response time < 1s': (r) => r.timings.duration < 1000,
+    });
+
+    sleep(1);
 }
